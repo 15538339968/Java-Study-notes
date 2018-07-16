@@ -115,13 +115,13 @@
 
 ### 枚举类型Enum
 ### 字符串String
-    * 传送门
+   * 传送门
     [深入理解Java中的String](https://www.cnblogs.com/xiaoxi/p/6036701.html)
 ### 数组
     在Java中，数组也可以视为一种数据类型。它本身是一种引用类型;  
     Java的数组既可以存储基本类型的数据，也可以存储引用数据类型的数据。  
 
-    * 传送门
+   * 传送门
     [Java 数组](http://www.runoob.com/java/java-array.html)
      
 ### 保留字&关键字
