@@ -52,8 +52,63 @@
 
 * 其中，int与Integer的转换最多也最频繁，所以有一点要注意，也是面试时常问到的问题： 
   * int与Integer的区别： 
-    * int的默认值 为0，而Integer的默认值为null,在使用Integer前需要初始化。 
-    * int是基本类型，而Integer是包装类，可以自动 拆箱、拆箱，Integer封装了很多的方法，
+    int的默认值 为0，而Integer的默认值为null,在使用Integer前需要初始化。 
+    int是基本类型，而Integer是包装类，可以自动 拆箱、拆箱，Integer封装了很多的方法
     
- 
- 
+### 变量
+  * 常量
+    final 数据类型 常量名称 [=值];
+    名称通常使用大写字母，例如PI、YEAR等
+    必须要在常量声明时对其进行初始化，一旦初始化后，就无法再次对这个常量进行赋值。
+  
+  * 变量初始化
+    > 变量是利用声明的方式，将内存中的某个内存块保留下来以供程序使用，其内的值是可变的。可声明的变量数据类型有整型(int)、字符型(char)、浮点型(float或double)，也可以是其他的数据类型(如用户自定义的数据类型——类)。  
+    
+    * 声明变量的作用
+      (1)指定在内存中分配空间大小。  
+      (2)规定这个变量所能接受的运算。  
+    * 变量的命名规则
+      变量也是一种标识符，所以它也遵循标识符的命名规则。  
+    * 变量的作用范围
+      * 成员变量
+        在类体中定义的变量为成员变量。它的作用范围为整个类，也就是说在这个类中都可以访问到定义的这个成员变量。
+        ```
+          public class TestMemVar4_3 {
+              static int var= 1; //定义一个成员变量
+              public static void main(String[] args){
+                 System.out.println("成员变量 var的值是："+var);
+              }
+              }
+        ```
+      * 局部变量
+        在一个函数(或称方法)或函数内代码块(code block)中定义的变量称为局部变量，局部变量在函数或代码块被执行时创建，在函数或代码块结束时被销毁。局部变量在进行取值操作前必须被初始化或赋值操作，否则会出现编译错误！
+        ```
+        //main方法参数列表定义的局部变量args
+        public static void main(String[] args)  {
+           int sum= 0; //main方法体内定义的局部变量 sum
+           for (int i= 1; i<= 5; i++) { // for循环体内定义的局部变量 i
+               sum= sum+ i;
+               System.out.println("i= "+ i+ ", sum= "+ sum);
+           }
+           }
+        ```
+** 注意事项：**
+  >声明在方法中的变量在使用时必须要初始化;  
+  
+  ```
+   对于全局变量如果不赋值，会有默认值如果在方法中有:
+   public void test(){
+   int i;
+   System.out.print(i);
+  }
+  会报错。
+  
+  如果在类中有
+  public class Test{
+    int i;
+    public void test(){
+      System.out.print(i);
+    }
+  }
+  则会给i初始值0。
+  ```
