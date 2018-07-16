@@ -46,15 +46,14 @@
     int j = ii;         //这种写法是将Integer的值自动转换成了int基本类型，这种自动转换的方法就叫自动拆箱。
     ```
     
- * 不只是int与Integer可以自动转换，八大基本类型都可以, 以下是八大基本类型及对应的包装炻
-
-  基本类型 byte short int long float double char boolean 
-  包装类型 Byte Short Integer Long Float Double Character Boolean
+ * 不只是int与Integer可以自动转换，八大基本类型都可以, 以下是八大基本类型及对应的包装炻  
+    基本类型 byte short int long float double char boolean   
+    包装类型 Byte Short Integer Long Float Double Character Boolean  
 
 * 其中，int与Integer的转换最多也最频繁，所以有一点要注意，也是面试时常问到的问题： 
   * int与Integer的区别： 
-   * 1.int的默认值 为0，而Integer的默认值为null,在使用Integer前需要初始化。 
-   * 2.int是基本类型，而Integer是包装类，可以自动 拆箱、拆箱，Integer封装了很多的方法，
+    * int的默认值 为0，而Integer的默认值为null,在使用Integer前需要初始化。 
+    * int是基本类型，而Integer是包装类，可以自动 拆箱、拆箱，Integer封装了很多的方法，
     
  
  
