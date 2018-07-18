@@ -149,6 +149,10 @@
   * 匿名内部类
   * 静态内部类
 
+  内部类的使用场景和好处：
+  * 每个内部类都能独立的继承一个接口的实现，所以无论外部类是否已经继承了某个(接口的)实现，对于内部类都没有影响。内部类使得多继承的解决方案变得完整，
+  * 方便将存在一定逻辑关系的类组织在一起，又可以对外界隐藏。
+
 传送门：[Java内部类详解](https://www.cnblogs.com/dolphin0520/p/3811445.html)
 
 ### 方法
@@ -175,7 +179,75 @@
   继承性：继承性是子类共享其父类数据和方法的机制。它由类的派生功能体现。
   一个类直接继承其他类的全部描述，同时可修改和扩充。继承具有传递性。继承分为单继承(一个子类有一父类)和多重继承(一个类有多个父类)。 
   类的对象是各自封闭的，如果没继承性机制，则类的对象中的数据、方法就会出现大量重复。继承不仅支持系统的可重用性，而且还促进系统的可扩充性。
-  
+
+传送门：[Java：类与继承](https://www.cnblogs.com/dolphin0520/p/3803432.html)
+
+ * 属性静态绑定、可继承的方法动态绑定
+   * 父类子类有相同属性时，是在父类基础上添加而非覆盖。
+   * 方法和属性调用时，是从当前类开始一直向上查找。找到就停止。
+   * 调用的是谁的方法，查找的起点就是谁。所以，准确判断是哪个类的方法很重要。
+
+   ```
+     public class Test {
+         public static void main(String[] args)  {
+             Shape shape = new Circle();
+             System.out.println(shape.name);
+             shape.printType();
+             shape.printName();
+             System.out.println(shape.getName());
+             System.out.println(shape.getCName());
+
+         }
+     }
+
+     class Shape {
+         public String name = "shape";
+
+         public Shape(){
+             System.out.println("shape constructor");
+         }
+
+         public void printType() {
+             System.out.println("this is shape");
+         }
+
+         public static void printName() {
+             System.out.println("shape");
+         }
+
+         public String getName(){
+             return name;
+         }
+     }
+
+     class Circle extends Shape {
+         public String name = "circle";
+
+         public Circle() {
+             System.out.println("circle constructor");
+         }
+
+         public void printType() {
+             System.out.println("this is circle");
+         }
+
+         public static void printName() {
+             System.out.println("circle");
+         }
+         public String getCName(){
+             return name;
+         }
+     }
+
+     // 输出 结果为：
+     shape constructor
+     circle constructor
+     shape
+     this is circle
+     shape
+     shape
+     circle
+   ```
   
 ### 多态
 #### 概念
@@ -186,3 +258,51 @@
   > 如：同样是run方法，飞鸟调用时是飞，野兽调用时是奔跑。
   多态性的实现受到继承性的支持，利用类继承的层次关系，把具有通用功能的协议存放在类层次中尽可能高的地方，而将实现这一功能的不同方法置于较低层次，
   这样，在这些低层次上生成的对象就能给通用消息以不同的响应。在OOPL中可通过在派生类中重定义基类函数(定义为重载函数或虚函数)来实现多态性。
+
+ * 多态存在的三个必要条件
+   * 要有继承；
+   * 要有重写；
+   * 父类引用指向子类对象 (继承中的例子)
+ * 多态的好处
+   * 可替换性（substitutability）:多态对已存在代码具有可替换性。例如，多态对圆Circle类工作，对其他任何圆形几何体，如圆环，也同样工作。
+   * 可扩充性（extensibility）:多态对代码具有可扩充性。增加新的子类不影响已存在类的多态性、继承性，以及其他特性的运行和操作。实际上新加子类更容易获得多态功能。例如，在实现了圆锥、半圆锥以及半球体的多态基础上，很容易增添球体类的多态性。
+   * 接口性（interface-ability）:多 态是超类通过方法签名，向子类提供了一个共同接口，由子类来完善或者覆盖它而实现的。
+   * 灵活性（flexibility）:它在应用中体现了灵活多样的操作，提高了使用效率。
+   * 简化性（simplicity）:多态简化对应用软件的代码编写和修改过程，尤其在处理大量对象的运算和操作时，这个特点尤为突出和重要。
+
+传送门：[理解Java的多态](https://www.cnblogs.com/chenssy/p/3372798.html)
+
+
+## 接口
+  * 接口的特性
+    传送门：[接口的特性](http://www.cnblogs.com/xdp-gacl/p/3651121.html)
+  * 接口与抽象类
+    传送门：[接口与抽象类](http://www.cnblogs.com/dolphin0520/p/3811437.html)
+  * 对象克隆
+  * 接口与回调
+    传送门：[Java接口回调一般用法](https://blog.csdn.net/jonsnoww/article/details/68932292)
+
+
+## 重载与重写的区别
+  * 重写方法的规则：
+     * 参数列表必须完全与被重写的方法相同，否则不能称其为重写而是重载。
+     * 返回的类型必须一直与被重写的方法的返回类型相同，否则不能称其为重写而是重载。
+     * 访问修饰符的限制一定要大于被重写方法的访问修饰符（public>protected>default>private）
+     * 重写方法一定不能抛出新的检查异常或者比被重写方法申明更加宽泛的检查型异常。例如：父类的一个方法申明了一个检查异常IOException，在重写这个方法是就不能抛出Exception,只能抛出IOException的子类异常，可以抛出非检查异常。
+
+  * 而重载的规则：
+     * 必须具有不同的参数列表；
+     * 可以有不同的返回类型，只要参数列表不同就可以了；
+     * 可以有不同的访问修饰符；
+     * 可以抛出不同的异常；
+
+在继承预计口实现中：
+   * 重写是动态绑定
+   * 重载是静态绑定
+
+ 方法查找规则：
+     (1)在常量池中找到方法调用的符号引用
+     (2)查看Person的方法表，得到speak方法在该方法表的偏移量（假设为15），这样就得到该方法的直接引用。
+     (3)根据this指针确定方法接收者(girl)的实际类型
+     (4)根据对象的实际类型得到该实际类型对应的方法表，根据偏移量15查看有无重写（override）该方法，如果重写，则可以直接调用；如果没有重写，则需要拿到按照继承关系从下往上的基类（这里是Person类）的方法表，同样按照这个偏移
+传送门：[例子-> 看2.1 接口举例](http://www.cnblogs.com/xdp-gacl/p/3651121.html)
