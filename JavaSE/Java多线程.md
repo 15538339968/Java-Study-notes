@@ -85,3 +85,143 @@
   传送门：[匿名内部类实现](https://blog.csdn.net/qq_29720657/article/details/78705865)
 
 ## 终止线程
+
+ 1. 使用退出标志，使线程正常退出，也就是当run方法完成后线程终止。
+ 2. 使用stop方法强行终止线程（这个方法不推荐使用，因为stop和suspend、resume一样，也可能发生不可预料的结果）。
+ 3. 使用interrupt方法中断线程。
+
+### 停止状态
+  * 处于运行状态的线程停止
+  * 即将或正在处于非运行态的线程停止
+    * 处于可中断等待线程的停止
+    * 处于IO阻塞状态线程的停止
+  * 处于大数据IO读写中的线程停止
+  * 在线程运行前停止线程
+
+传送门：[终止线程](https://blog.csdn.net/anhuidelinger/article/details/11746365)
+
+## 线程状态
+  上面意见简单说过了。
+  [线程状态](http://www.jiacheo.org/blog/338)
+
+## Thread 类
+
+### 对象方法
+  - 启动start()
+  - 终端interrupt()
+  - 等待线程终止join()
+  - 将该线程标记为守护线程或用户线程setDaemon(boolean on)
+  - 更改线程的优先级setPriority(int newPriority)
+  - 得到线程ID getId()
+  - 得到或者设置线程名称 getName()和setName()
+
+  传送门：[yield与join方法的区别](http://www.importnew.com/14958.html)
+
+### 静态方法
+  - 返回对当前正在执行的线程对象的引用currentThread()
+  - 线程休眠sleep(long millis)
+  - 暂停当前正在执行的线程对象，并执行其他线程yield()
+
+## 线程同步
+
+### synchronized
+  - 可见性
+  - 原子性(互斥性)
+  - 可重入性
+
+  [Synchronized的实现原理](http://www.hollischuang.com/archives/1883)
+
+  [synchronized关键字详解](http://www.cnblogs.com/mengdd/archive/2013/02/16/2913806.html)
+
+### volatile
+  - 不保证原子性
+  - 可见性
+  - 有序性
+
+   [volatile关键字](http://www.techug.com/post/java-volatile-keyword.html)
+
+   [volatile关键字解析](http://www.cnblogs.com/dolphin0520/p/3920373.html)
+
+### 显示锁 Lock
+
+   [内置锁与显式锁](https://segmentfault.com/a/1190000009255406)
+
+#### ReentrantLock
+  - 公平锁与非公平锁
+  - 获取锁lock()
+  - 解锁unlock()
+  - 尝试获取锁tryLock()
+  - tryLock(long timeout, TimeUnit unit)
+    在timeout时间内阻塞的获取锁，成功返回true，超时返回false。同时立即处理interrupt信息，并抛出异常。
+
+  [ReentrantLock之公平锁与非公平锁浅析](https://blog.csdn.net/zmx729618/article/details/51593666)
+
+#### ReentrantReadWriteLock
+  - 公平锁与非公平锁
+  - 返回用于读取操作的锁（共享锁）readLock()
+  - 返回用于写入操作的锁（独占锁）writeLock()
+  - 读读共享、读写互斥、写读互斥、写写互斥
+
+  [Java并发编程--ReentrantReadWriteLock](https://www.cnblogs.com/zaizhoumo/p/7782941.html)
+
+----
+  下面的先列一下，之后抽时间看过之后再来补充
+----
+
+### 并发编程工具类
+
+#### 闭锁CountDownLatch
+  - 计数器减1 countDown()
+  - 阻塞等待至计数器为0 await()
+  - await(long timeout,TimeUnit unit)
+#### 关卡CyclicBarrier
+  - 阻塞互相待await()
+  - await(long timeout,TimeUnit unit)
+
+#### 信号量Semaphore
+  - 公平策略与非公平策略
+  - 从此信号量阻塞地获取一个许可 acquire()
+  - 释放一个许可，将其返回给信号量 release()
+#### AQS
+
+### 乐观锁和悲观锁
+
+## 线程通信
+
+### 基于共享内存通信
+  - 管道
+  - ThreadLocal
+    重写initialValue解决空指针问题
+### wait() 与 notify/notifyAll()
+### 显示锁Lock的Condition通信
+### join
+
+## 线程异常捕获
+  - UncaughtExceptionHandler
+  - 线程组重载UncaughtException
+
+## 线程池
+
+### 线程池定义
+
+### 线程池组成
+  - 线程池管理器
+  - 工作线程
+  - 任务接口
+  - 任务队列
+
+### concurrent包
+
+### Executors框架
+
+### Executor
+
+## 原子类
+
+### 基本类
+### 引用类
+### 数组类
+### 属性原子更新类
+
+
+
