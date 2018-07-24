@@ -74,10 +74,11 @@
 
     **使用代理模式，可以将功能划分的更加清晰，有助于后期维护！**
   - 外观模式
-    > 外观模式是为了解决类与类之家的依赖关系的，像spring一样，可以将类和类之间的关系配置到配置文件中，而外观模式就是将他们的关系放在一个Facade类中，降低了类类之间的耦合度，该模式中没有涉及到接口
+    > 外观模式是为了解决类与类之家的依赖关系的，像spring一样，可以将类和类之间的关系配置到配置文件中，而外观模式就是将他们的关系放在一个Facade类中，降低了类类之间的耦合度，该模式中没有涉及到接口。
     > 如果我们没有Computer类，那么，CPU、Memory、Disk他们之间将会相互持有实例，产生关系，这样会造成严重的依赖，修改一个类，可能会带来其他类的修改，这不是我们想要看到的，有了Computer类，他们之间的关系被放在了Computer类里，这样就起到了解耦的作用，这，就是外观模式!
   - 桥接模式
-    > 桥接模式就是把事物和其具体实现分开，使他们可以各自独立的变化。桥接的用意是：将抽象化与实现化解耦，使得二者可以独立变化，像我们常用的JDBC桥DriverManager一样，JDBC进行连接数据库的时候，在各个数据库之间进行切换，基本不需要动太多的代码，甚至丝毫不用动，原因就是JDBC提供统一接口，每个数据库提供各自的实现，用一个叫做数据库驱动的程序来桥接就行了。
+    > 桥接模式就是把事物和其具体实现分开，使他们可以各自独立的变化。
+    > 桥接的用意是：将抽象化与实现化解耦，使得二者可以独立变化，像我们常用的JDBC桥DriverManager一样，JDBC进行连接数据库的时候，在各个数据库之间进行切换，基本不需要动太多的代码，甚至丝毫不用动，原因就是JDBC提供统一接口，每个数据库提供各自的实现，用一个叫做数据库驱动的程序来桥接就行了。
   - 组合模式
     > 组合模式有时又叫部分-整体模式在处理类似树形结构的问题时比较方便
   - 享元模式
@@ -130,32 +131,757 @@
       >一般主要应用在OOP开发中的编译器的开发中，基本就这样，解释器模式用来做各种各样的解释器，如正则表达式等的解释器等等！
 
 
+## 实例
+
+### 六种单例实现方式
+
+#### 饿汉法
+  饿汉法就是在第一次引用该类的时候就创建对象实例，而不管实际是否需要创建。代码如下：
+  ```
+  public class Singleton {
+         private static Singleton = new Singleton();
+         private Singleton() {}
+         public static getSignleton(){
+             return singleton();
+         }
+     }
+  ```
+  这样做的好处是编写简单，但是无法做到延迟创建对象。但是我们很多时候都希望对象可以尽可能地延迟加载，从而减小负载，所以就需要下面的懒汉法：
+
+#### 单线程写法
+  这种写法是最简单的，由私有构造器和一个公有静态工厂方法构成，在工厂方法中对singleton进行null判断，如果是null就new一个出来，最后返回singleton对象。这种方法可以实现延时加载，但是有一个致命弱点：线程不安全。如果有两条线程同时调用getSingleton()方法，就有很大可能导致重复创建对象。
+  ```
+  public class Singleton {
+      private static Singleton singleton = null;
+      private Singleton(){}
+      public static Singleton getSingleton() {
+          if(singleton == null) singleton = new Singleton();
+          return singleton;
+      }
+  }
+  ```
+#### 考虑线程安全的写法
+  这种写法考虑了线程安全，将对singleton的null判断以及new的部分使用synchronized进行加锁。同时，对singleton对象使用volatile关键字进行限制，保证其对所有线程的可见性，并且禁止对其进行指令重排序优化。如此即可从语义上保证这种单例模式写法是线程安全的。注意，这里说的是语义上，实际使用中还是存在小坑的，会在后文写到。
+  ```
+  public class Singleton {
+      private static volatile Singleton singleton = null;
+      private Singleton(){}
+      public static Singleton getSingleton(){
+          synchronized (Singleton.class){
+              if(singleton == null){
+                  singleton = new Singleton();
+              }
+          }
+          return singleton;
+      }
+  }
+  ```
+#### 兼顾线程安全和效率的写法
+  虽然上面这种写法是可以正确运行的，但是其效率低下，还是无法实际应用。因为每次调用getSingleton()方法，都必须在synchronized这里进行排队，而真正遇到需要new的情况是非常少的。所以，就诞生了第三种写法：
+  ```
+  public class Singleton {
+      private static volatile Singleton singleton = null;
+
+      private Singleton(){}
+
+      public static Singleton getSingleton(){
+          if(singleton == null){
+              synchronized (Singleton.class){
+                  if(singleton == null){
+                      singleton = new Singleton();
+                  }
+              }
+          }
+          return singleton;
+      }
+  }
+  ```
+  这种写法被称为“双重检查锁”，顾名思义，就是在getSingleton()方法中，进行两次null检查。看似多此一举，但实际上却极大提升了并发度，进而提升了性能。为什么可以提高并发度呢？就像上文说的，在单例中new的情况非常少，绝大多数都是可以并行的读操作。因此在加锁前多进行一次null检查就可以减少绝大多数的加锁操作，执行效率提高的目的也就达到了。
+  **坑**
+   那么，这种写法是不是绝对安全呢？前面说了，从语义角度来看，并没有什么问题。但是其实还是有坑。说这个坑之前我们要先来看看volatile这个关键字。其实这个关键字有两层语义。第一层语义相信大家都比较熟悉，就是可见性。可见性指的是在一个线程中对该变量的修改会马上由工作内存（Work Memory）写回主内存（Main Memory），所以会马上反应在其它线程的读取操作中。顺便一提，工作内存和主内存可以近似理解为实际电脑中的高速缓存和主存，工作内存是线程独享的，主存是线程共享的。volatile的第二层语义是禁止指令重排序优化。大家知道我们写的代码（尤其是多线程代码），由于编译器优化，在实际执行的时候可能与我们编写的顺序不同。编译器只保证程序执行结果与源代码相同，却不保证实际指令的顺序与源代码相同。这在单线程看起来没什么问题，然而一旦引入多线程，这种乱序就可能导致严重问题。volatile关键字就可以从语义上解决这个问题。
+
+  注意，前面反复提到“从语义上讲是没有问题的”，但是很不幸，禁止指令重排优化这条语义直到jdk1.5以后才能正确工作。此前的JDK中即使将变量声明为volatile也无法完全避免重排序所导致的问题。所以，在jdk1.5版本前，双重检查锁形式的单例模式是无法保证线程安全的。
+
+#### 静态内部类法
+   那么，有没有一种延时加载，并且能保证线程安全的简单写法呢？我们可以把Singleton实例放到一个静态内部类中，这样就避免了静态实例在Singleton类加载的时候就创建对象，并且由于静态内部类只会被加载一次，所以这种写法也是线程安全的：
+   ```
+   public class Singleton {
+       private static class Holder {
+           private static Singleton singleton = new Singleton();
+       }
+
+       private Singleton(){}
+
+       public static Singleton getSingleton(){
+           return Holder.singleton;
+       }
+   }
+   ```
+  但是，上面提到的所有实现方式都有两个共同的缺点：
+  >- 都需要额外的工作(Serializable、transient、readResolve())来实现序列化，否则每次反序列化一个序列化的对象实例时都会创建一个新的实例。
+  >- 可能会有人使用反射强行调用我们的私有构造器（如果要避免这种情况，可以修改构造器，让它在创建第二个实例的时候抛异常）。
+
+#### 枚举写法
+  还有一种更加优雅的方法来实现单例模式，那就是枚举写法：
+  ```
+  enum SingletonDemo{
+     INSTANCE;
+     public void otherMethods(){
+         System.out.println("Something");
+     }
+  }
+
+  // 如果我们想调用它的方法时，仅需要以下操作：
+  public class Hello {
+    public static void main(String[] args){
+        SingletonDemo.INSTANCE.otherMethods();
+    }
+  }
+
+  ```
+  使用枚举除了线程安全和防止反射强行调用构造器之外，还提供了自动序列化机制，防止反序列化的时候创建新的对象。因此，推荐尽可能地使用枚举来实现单例。
+
+  原文来自：[](http://www.jcodecraeer.com/a/chengxusheji/java/2016/0326/4086.html)
+
+### 三种代理模式实现方式
+  代理(Proxy)是一种设计模式,提供了对目标对象另外的访问方式;即通过代理对象访问目标对象.这样做的好处是:可以在目标对象实现的基础上,增强额外的功能操作,即扩展目标对象的功能.
+  思想:不要随意去修改别人已经写好的代码或者方法,如果需改修改,可以通过代理的方式来扩展该方法。
+  代理模式的关键点是:代理对象与目标对象.代理对象是对目标对象的扩展,并会调用目标对象。
+
+#### 静态代理
+  静态代理在使用时,需要定义接口或者父类,被代理对象与代理对象一起实现相同的接口或者是继承相同父类.
+
+  下面举个案例来解释:
+  模拟保存动作,定义一个保存动作的接口:IUserDao.java,然后目标对象实现这个接口的方法UserDao.java,此时如果使用静态代理方式,就需要在代理对象(UserDaoProxy.java)中也实现IUserDao接口.调用的时候通过调用代理对象的方法来调用目标对象.
+  需要注意的是,代理对象与目标对象要实现相同的接口,然后通过调用相同的方法来调用目标对象的方法
+
+  代码示例:
+  接口:IUserDao.java
+  ```
+  /**
+   * 接口
+   */
+  public interface IUserDao {
+
+      void save();
+  }
+  ```
+  目标对象:UserDao.java
+  ```
+  /**
+   * 接口实现
+   * 目标对象
+   */
+  public class UserDao implements IUserDao {
+      public void save() {
+          System.out.println("----已经保存数据!----");
+      }
+  }
+  ```
+  代理对象:UserDaoProxy.java
+  ```
+  /**
+   * 代理对象,静态代理
+   */
+  public class UserDaoProxy implements IUserDao{
+      //接收保存目标对象
+      private IUserDao target;
+      public UserDaoProxy(IUserDao target){
+          this.target=target;
+      }
+
+      public void save() {
+          System.out.println("开始事务...");
+          target.save();//执行目标对象的方法
+          System.out.println("提交事务...");
+      }
+  }
+  ```
+  测试类:App.java
+  ```
+  /**
+   * 测试类
+   */
+  public class App {
+      public static void main(String[] args) {
+          //目标对象
+          UserDao target = new UserDao();
+
+          //代理对象,把目标对象传给代理对象,建立代理关系
+          UserDaoProxy proxy = new UserDaoProxy(target);
+
+          proxy.save();//执行的是代理的方法
+      }
+  }
+  ```
+  **静态代理总结:**
+  1. 可以做到在不修改目标对象的功能前提下,对目标功能扩展.
+  2. 缺点:
+
+  因为代理对象需要与目标对象实现一样的接口,所以会有很多代理类,类太多.同时,一旦接口增加方法,目标对象与代理对象都要维护.
+  如何解决静态代理中的缺点呢?答案是可以使用动态代理方式
+
+#### 动态代理
+
+  **动态代理有以下特点:**
+  1. 代理对象,不需要实现接口
+  2. 代理对象的生成,是利用JDK的API,动态的在内存中构建代理对象(需要我们指定创建代理对象/目标对象实现的接口的类型)
+  3. 动态代理也叫做:JDK代理,接口代理
+
+  **JDK中生成代理对象的API**
+  代理类所在包:java.lang.reflect.Proxy
+  JDK实现代理只需要使用newProxyInstance方法,但是该方法需要接收三个参数,完整的写法是:
+  ```
+  static Object newProxyInstance(ClassLoader loader, Class<?>[] interfaces,InvocationHandler h )
+  ```
+  注意该方法是在Proxy类中是静态方法,且接收的三个参数依次为:
+
+  - ```ClassLoader loader,```:指定当前目标对象使用类加载器,获取加载器的方法是固定的
+  - ```Class<?>[] interfaces,```:目标对象实现的接口的类型,使用泛型方式确认类型
+  - ```InvocationHandler h```:事件处理,执行目标对象的方法时,会触发事件处理器的方法,会把当前执行目标对象的方法作为参数传入
+
+  代码示例:
+  接口类IUserDao.java以及接口实现类,目标对象UserDao是一样的,没有做修改.在这个基础上,增加一个代理工厂类(ProxyFactory.java),将代理类写在这个地方,然后在测试类(需要使用到代理的代码)中先建立目标对象和代理对象的联系,然后代用代理对象的中同名方法
+
+  代理工厂类:ProxyFactory.java
+  ```
+  /**
+   * 创建动态代理对象
+   * 动态代理不需要实现接口,但是需要指定接口类型
+   */
+  public class ProxyFactory{
+
+      //维护一个目标对象
+      private Object target;
+      public ProxyFactory(Object target){
+          this.target=target;
+      }
+
+     //给目标对象生成代理对象
+      public Object getProxyInstance(){
+          return Proxy.newProxyInstance(
+                  target.getClass().getClassLoader(),
+                  target.getClass().getInterfaces(),
+                  new InvocationHandler() {
+                      @Override
+                      public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                          System.out.println("开始事务2");
+                          //执行目标对象方法
+                          Object returnValue = method.invoke(target, args);
+                          System.out.println("提交事务2");
+                          return returnValue;
+                      }
+                  }
+          );
+      }
+
+  }
+  ```
+  测试类:App.java
+  ```
+  /**
+   * 测试类
+   */
+  public class App {
+      public static void main(String[] args) {
+          // 目标对象
+          IUserDao target = new UserDao();
+          // 【原始的类型 class cn.itcast.b_dynamic.UserDao】
+          System.out.println(target.getClass());
+
+          // 给目标对象，创建代理对象
+          IUserDao proxy = (IUserDao) new ProxyFactory(target).getProxyInstance();
+          // class $Proxy0   内存中动态生成的代理对象
+          System.out.println(proxy.getClass());
+
+          // 执行方法   【代理对象】
+          proxy.save();
+      }
+  }
+  ```
+  **总结:**
+  代理对象不需要实现接口,但是目标对象一定要实现接口,否则不能用动态代理
+
+#### Cglib代理
+
+  面的静态代理和动态代理模式都是要求目标对象是实现一个接口的目标对象,但是有时候目标对象只是一个单独的对象,并没有实现任何的接口,这个时候就可以使用以目标对象子类的方式类实现代理,这种方法就叫做:Cglib代理
+
+  Cglib代理,也叫作子类代理,它是在内存中构建一个子类对象从而实现对目标对象功能的扩展.
+
+  - JDK的动态代理有一个限制,就是使用动态代理的对象必须实现一个或多个接口,如果想代理没有实现接口的类,就可以使用Cglib实现.
+  - Cglib是一个强大的高性能的代码生成包,它可以在运行期扩展java类与实现java接口.它广泛的被许多AOP的框架使用,例如Spring AOP和synaop,为他们提供方法的interception(拦截)
+  - Cglib包的底层是通过使用一个小而块的字节码处理框架ASM来转换字节码并生成新的类.不鼓励直接使用ASM,因为它要求你必须对JVM内部结构包括class文件的格式和指令集都很熟悉.
+
+  Cglib子类代理实现方法:
+
+  1. 需要引入cglib的jar文件,但是Spring的核心包中已经包括了Cglib功能,所以直接引入```pring-core-3.2.5.jar```即可.
+  2. 引入功能包后,就可以在内存中动态构建子类
+  3. 代理的类不能为final,否则报错
+  4. 目标对象的方法如果为final/static,那么就不会被拦截,即不会执行目标对象额外的业务方法.
+
+  代码示例:
+  目标对象类:UserDao.java
+  ```
+  /**
+   * 目标对象,没有实现任何接口
+   */
+  public class UserDao {
+
+      public void save() {
+          System.out.println("----已经保存数据!----");
+      }
+  }
+  ```
+  Cglib代理工厂:ProxyFactory.java
+  ```
+  /**
+   * Cglib子类代理工厂
+   * 对UserDao在内存中动态构建一个子类对象
+   */
+  public class ProxyFactory implements MethodInterceptor{
+      //维护目标对象
+      private Object target;
+
+      public ProxyFactory(Object target) {
+          this.target = target;
+      }
+
+      //给目标对象创建一个代理对象
+      public Object getProxyInstance(){
+          //1.工具类
+          Enhancer en = new Enhancer();
+          //2.设置父类
+          en.setSuperclass(target.getClass());
+          //3.设置回调函数
+          en.setCallback(this);
+          //4.创建子类(代理对象)
+          return en.create();
+
+      }
+
+      @Override
+      public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+          System.out.println("开始事务...");
+
+          //执行目标对象的方法
+          Object returnValue = method.invoke(target, args);
+
+          System.out.println("提交事务...");
+
+          return returnValue;
+      }
+  }
+  ```
+  测试类:
+  ```
+  /**
+   * 测试类
+   */
+  public class App {
+
+      @Test
+      public void test(){
+          //目标对象
+          UserDao target = new UserDao();
+
+          //代理对象
+          UserDao proxy = (UserDao)new ProxyFactory(target).getProxyInstance();
+
+          //执行代理对象的方法
+          proxy.save();
+      }
+  }
+  ```
+  在Spring的AOP编程中:
+  如果加入容器的目标对象有实现接口,用JDK代理。
+  如果目标对象没有实现接口,用Cglib代理。
+
+>作者：岑宇
+ 出处：http://www.cnblogs.com/cenyu/
+ 本文版权归作者和博客园共有，欢迎转载，但未经作者同意必须保留此段声明，且在文章页面明显位置给出原文连接，否则保留追究法律责任的权利。
+ 如果文中有什么错误，欢迎指出。以免更多的人被误导。
+
+### 三种工厂模式实现方式
+
+#### 简单工厂模式
+
+  ```
+   // 抽象一个面条基类，(接口也可以)，这是产品的抽象类。
+   public abstract class INoodles {
+       /**
+        * 描述每种面条啥样的
+        */
+       public abstract void desc();
+   }
+
+   // 先来一份兰州拉面（具体的产品类）：
+   public class LzNoodles extends INoodles {
+       @Override
+       public void desc() {
+           System.out.println("兰州拉面 上海的好贵 家里才5 6块钱一碗");
+       }
+   }
+   // 程序员加班必备也要吃泡面（具体的产品类）：
+   public class PaoNoodles extends INoodles {
+       @Override
+       public void desc() {
+           System.out.println("泡面好吃 可不要贪杯");
+       }
+   }
+   // 还有我最爱吃的家乡的干扣面（具体的产品类）：
+   public class GankouNoodles extends INoodles {
+     @Override
+     public void desc() {
+        System.out.println("还是家里的干扣面好吃 6块一碗");
+     }
+   }
 
 
+   // 准备工作做完了，我们来到一家“简单面馆”（简单工厂类），菜单如下：
+   public class SimpleNoodlesFactory {
+       public static final int TYPE_LZ = 1;//兰州拉面
+       public static final int TYPE_PM = 2;//泡面
+       public static final int TYPE_GK = 3;//干扣面
 
+       public static INoodles createNoodles(int type) {
+           switch (type) {
+               case TYPE_LZ:
+                   return new LzNoodles();
+               case TYPE_PM:
+                   return new PaoNoodles();
+               case TYPE_GK:
+               default:
+                   return new GankouNoodles();
+           }
+       }
+   }
+  ```
+  简单面馆就提供三种面条（产品），你说你要啥，他就给你啥。这里我点了一份干扣面:
+  ```
+  /**
+   * 简单工厂模式
+   */
+   INoodles noodles = SimpleNoodlesFactory.createNoodles(SimpleNoodlesFactory.TYPE_GK);
+   noodles.desc();
+  ```
+  **特点**
+  1. 它是一个具体的类，非接口 抽象类。有一个重要的create()方法，利用if或者 switch创建产品并返回。
+  2. create()方法通常是静态的，所以也称之为静态工厂。
 
+  **缺点**
+  1. 扩展性差（我想增加一种面条，除了新增一个面条产品类，还需要修改工厂类方法）
+  2. 不同的产品需要不同额外参数的时候 不支持。
 
+#### 工厂方法模式
+  - 模式描述
+    > 提供一个用于创建对象的接口(工厂接口)，让其实现类(工厂实现类)决定实例化哪一个类(产品类)，并且由该实现类创建对应类的实例。
+  - 模式作用
+    >可以一定程度上解耦，消费者和产品实现类隔离开，只依赖产品接口(抽象产品)，产品实现类如何改动与消费者完全无关。
+     可以一定程度增加扩展性，若增加一个产品实现，只需要实现产品接口，修改工厂创建产品的方法，消费者可以无感知（若消费者不关心具体产品是什么的情况）。
+     可以一定程度增加代码的封装性、可读性。清楚的代码结构，对于消费者来说很少的代码量就可以完成很多工作。
+     等等。//TODO
+     另外，抽象工厂才是实际意义的工厂模式，工厂方法只是抽象工厂的一个比较常见的情况。
+  - 适用场景
+    > 消费者不关心它所要创建对象的类(产品类)的时候。
+      消费者知道它所要创建对象的类(产品类)，但不关心如何创建的时候。
+      等等。//TODO
+      例如：hibernate里通过sessionFactory创建session、通过代理方式生成ws客户端时，通过工厂构建报文中格式化数据的对象。
+  - 模式要素
+    > 提供一个产品类的接口。产品类均要实现这个接口(也可以是abstract类，即抽象产品)。
+      提供一个工厂类的接口。工厂类均要实现这个接口(即抽象工厂)。
+      由工厂实现类创建产品类的实例。工厂实现类应有一个方法，用来实例化产品类。
 
+  ```
+  /**
+   * 工厂方法模式_工厂接口
+   *
+   * @author popkidorc
+   *
+   */
+  public interface IMyMessageFactory {
 
+      public IMyMessage createMessage(String messageType);
+  }
+  ```
+  ```
+  /**
+     * 工厂方法模式_工厂实现
+     *
+     * @author popkidorc
+     *
+     */
+    public class MyMessageFactory implements IMyMessageFactory {
 
+        @Override
+        public IMyMessage createMessage(String messageType) {
+            // 这里的方式是：消费者知道自己想要什么产品；若生产何种产品完全由工厂决定，则这里不应该传入控制生产的参数。
+            IMyMessage myMessage;
+            Map<String, Object> messageParam = new HashMap<String, Object>();
+            // 根据某些条件去选择究竟创建哪一个具体的实现对象，条件可以传入的，也可以从其它途径获取。
+            // sms
+            if ("SMS".equals(messageType)) {
+                myMessage = new MyMessageSms();
+                messageParam.put("PHONENUM", "123456789");
+            } else
+            // OA待办
+            if ("OA".equals(messageType)) {
+                myMessage = new MyMessageOaTodo();
+                messageParam.put("OAUSERNAME", "testUser");
+            } else
+            // email
+            if ("EMAIL".equals(messageType)) {
+                myMessage = new MyMessageEmail();
+                messageParam.put("EMAIL", "test@test.com");
+            } else
+            // 默认生产email这个产品
+            {
+                myMessage = new MyMessageEmail();
+                messageParam.put("EMAIL", "test@test.com");
+            }
+            myMessage.setMessageParam(messageParam);
+            return myMessage;
+        }
+    }
+  ```
+  ```
+  /**
+   * 工厂方法模式_产品接口
+   *
+   * @author popkidorc
+   *
+   */
+  public interface IMyMessage {
 
+      public Map<String, Object> getMessageParam();
 
+      public void setMessageParam(Map<String, Object> messageParam);
 
+      public void sendMesage() throws Exception;// 发送通知/消息
 
+  }
+  ```
+  ```
+  /**
+   * 工厂方法模式_虚拟产品类
+   *
+   * @author popkidorc
+   *
+   */
+  public abstract class MyAbstractMessage implements IMyMessage {
 
+      private Map<String, Object> messageParam;// 这里可以理解为生产产品所需要的原材料库。最好是个自定义的对象，这里为了不引起误解使用Map。
 
+      @Override
+      public Map<String, Object> getMessageParam() {
+          return messageParam;
+      }
 
+      @Override
+      public void setMessageParam(Map<String, Object> messageParam) {
+          this.messageParam = messageParam;
+      }
+  }
+  ```
+  ```
+  /**
+   * 工厂方法模式_email产品
+   *
+   * @author popkidorc
+   *
+   */
+  public class MyMessageEmail extends MyAbstractMessage {
 
+      @Override
+      public void sendMesage() throws Exception {
+          // TODO Auto-generated method stub
+          if (null == getMessageParam() || null == getMessageParam().get("EMAIL")
+                  || "".equals(getMessageParam().get("EMAIL"))) {
+              throw new Exception("发送短信,需要传入EMAIL参数");// 为了简单起见异常也不自定义了
+          }// 另外邮件内容，以及其他各种协议参数等等都要处理
 
+          System.out.println("我是邮件，发送通知给" + getMessageParam().get("EMAIL"));
+      }
 
+  }
+  ```
+  ```
+  /**
+   * 工厂方法模式_oa待办产品
+   *
+   * @author popkidorc
+   *
+   */
+  public class MyMessageOaTodo extends MyAbstractMessage {
 
+      @Override
+      public void sendMesage() throws Exception {
+          // TODO Auto-generated method stub
+          if (null == getMessageParam()
+                  || null == getMessageParam().get("OAUSERNAME")
+                  || "".equals(getMessageParam().get("OAUSERNAME"))) {
+              throw new Exception("发送OA待办,需要传入OAUSERNAME参数");// 为了简单起见异常也不自定义了
+          }// 这里的参数需求就比较多了不一一处理了
 
+          System.out
+                  .println("我是OA待办，发送通知给" + getMessageParam().get("OAUSERNAME"));
+      }
 
+  }
+  ```
+  ```
+  /**
+   * 工厂方法模式_sms产品
+   *
+   * @author popkidorc
+   *
+   */
+  public class MyMessageSms extends MyAbstractMessage {
 
+      @Override
+      public void sendMesage() throws Exception {
+          // TODO Auto-generated method stub
+          if (null == getMessageParam()
+                  || null == getMessageParam().get("PHONENUM")
+                  || "".equals(getMessageParam().get("PHONENUM"))) {
+              throw new Exception("发送短信,需要传入PHONENUM参数");// 为了简单起见异常也不自定义了
+          }// 另外短信信息，以及其他各种协议参数等等都要处理
 
+          System.out.println("我是短信，发送通知给" + getMessageParam().get("PHONENUM"));
+      }
 
+  }
+  ```
+  ```
+  /**
+   * 工厂方法模式_消费者类
+   *
+   * @author popkidorc
+   *
+   */
+  public class MyFactoryMethodMain {
 
+      public static void main(String[] args) {
+          IMyMessageFactory myMessageFactory = new MyMessageFactory();
+          IMyMessage myMessage;
+          // 对于这个消费者来说，不用知道如何生产message这个产品，耦合度降低
+          try {
+              // 先来一个短信通知
+              myMessage = myMessageFactory.createMessage("SMS");
+              myMessage.sendMesage();
 
+              // 来一个oa待办
+              myMessage = myMessageFactory.createMessage("OA");
+              myMessage.sendMesage();
+
+              // 来一个邮件通知
+              myMessage = myMessageFactory.createMessage("EMAIL");
+              myMessage.sendMesage();
+          } catch (Exception e) {
+              e.printStackTrace();
+          }
+      }
+  }
+  ```
+
+#### 抽象工厂模式
+
+  为创建一组相关或相互依赖的对象提供一个接口，而且无需指定他们的具体类。
+  ![类图](http://graph.guoyw.com/Java_notes/JavaSE/design_mode/%E6%8A%BD%E8%B1%A1%E5%B7%A5%E5%8E%82%E7%B1%BB%E5%9B%BE.png)
+
+  **抽象工厂模式与工厂方法模式的区别**
+  >抽象工厂模式是工厂方法模式的升级版本，他用来创建一组相关或者相互依赖的对象。他与工厂方法模式的区别就在于，工厂方法模式针对的是一个产品等级结构；
+   而抽象工厂模式则是针对的多个产品等级结构。在编程中，通常一个产品结构，表现为一个接口或者抽象类，也就是说，工厂方法模式提供的所有产品都是衍生自同一个接口或抽象类，而抽象工厂模式所提供的产品则是衍生自不同的接口或抽象类。
+
+  在抽象工厂模式中，有一个产品族的概念：所谓的产品族，是指位于不同产品等级结构中功能相关联的产品组成的家族。抽象工厂模式所提供的一系列产品就组成一个产品族；而工厂方法提供的一系列产品称为一个等级结构。我们依然拿生产汽车的例子来说明他们之间的区别。
+
+  ![类图](http://graph.guoyw.com/Java_notes/JavaSE/design_mode/%E6%8A%BD%E8%B1%A1%E5%B7%A5%E5%8E%82%E5%AE%9E%E4%BE%8B1.png)
+
+   在上面的类图中，两厢车和三厢车称为两个不同的等级结构；而2.0排量车和2.4排量车则称为两个不同的产品族。再具体一点，2.0排量两厢车和2.4排量两厢车属于同一个等级结构，2.0排量三厢车和2.4排量三厢车属于另一个等级结构；而2.0排量两厢车和2.0排量三厢车属于同一个产品族，2.4排量两厢车和2.4排量三厢车属于另一个产品族。
+
+   明白了等级结构和产品族的概念，就理解工厂方法模式和抽象工厂模式的区别了，如果工厂的产品全部属于同一个等级结构，则属于工厂方法模式；如果工厂的产品来自多个等级结构，则属于抽象工厂模式。在本例中，如果一个工厂模式提供2.0排量两厢车和2.4排量两厢车，那么他属于工厂方法模式；如果一个工厂模式是提供2.4排量两厢车和2.4排量三厢车两个产品，那么这个工厂模式就是抽象工厂模式，因为他提供的产品是分属两个不同的等级结构。当然，如果一个工厂提供全部四种车型的产品，因为产品分属两个等级结构，他当然也属于抽象工厂模式了。
+
+   ```
+   interface IProduct1 {
+       public void show();
+   }
+   interface IProduct2 {
+       public void show();
+   }
+
+   class Product1 implements IProduct1 {
+       public void show() {
+           System.out.println("这是1型产品");
+       }
+   }
+   class Product2 implements IProduct2 {
+       public void show() {
+           System.out.println("这是2型产品");
+       }
+   }
+
+   interface IFactory {
+       public IProduct1 createProduct1();
+       public IProduct2 createProduct2();
+   }
+   class Factory implements IFactory{
+       public IProduct1 createProduct1() {
+           return new Product1();
+       }
+       public IProduct2 createProduct2() {
+           return new Product2();
+       }
+   }
+
+   public class Client {
+       public static void main(String[] args){
+           IFactory factory = new Factory();
+           factory.createProduct1().show();
+           factory.createProduct2().show();
+       }
+   }
+   ```
+   ```
+   class Engine {
+       public void getStyle(){
+           System.out.println("这是汽车的发动机");
+       }
+   }
+   class Underpan {
+       public void getStyle(){
+           System.out.println("这是汽车的底盘");
+       }
+   }
+   class Wheel {
+       public void getStyle(){
+           System.out.println("这是汽车的轮胎");
+       }
+   }
+   public class Client {
+       public static void main(String[] args) {
+           Engine engine = new Engine();
+           Underpan underpan = new Underpan();
+           Wheel wheel = new Wheel();
+           ICar car = new Car(underpan, wheel, engine);
+           car.show();
+       }
+   }
+   ```
+
+  **抽象工厂模式的优点**
+   抽象工厂模式除了具有工厂方法模式的优点外，最主要的优点就是可以在类的内部对产品族进行约束。所谓的产品族，一般或多或少的都存在一定的关联，抽象工厂模式就可以在类内部对产品族的关联关系进行定义和描述，而不必专门引入一个新的类来进行管理。
+
+  **抽象工厂模式的缺点**
+   产品族的扩展将是一件十分费力的事情，假如产品族中需要增加一个新的产品，则几乎所有的工厂类都需要进行修改。所以使用抽象工厂模式时，对产品等级结构的划分是非常重要的。
+
+  **适用场景**
+  当需要创建的对象是一系列相互关联或相互依赖的产品族时，便可以使用抽象工厂模式。说的更明白一点，就是一个继承体系中，如果存在着多个等级结构（即存在着多个抽象类），并且分属各个等级结构中的实现类之间存在着一定的关联或者约束，就可以使用抽象工厂模式。假如各个等级结构中的实现类之间不存在关联或约束，则使用多个独立的工厂来对产品进行创建，则更合适一点。
+
+  **总结**
+  无论是简单工厂模式，工厂方法模式，还是抽象工厂模式，他们都属于工厂模式，在形式和特点上也是极为相似的，他们的最终目的都是为了解耦。在使用时，我们不必去在意这个模式到底工厂方法模式还是抽象工厂模式，因为他们之间的演变常常是令人琢磨不透的。经常你会发现，明明使用的工厂方法模式，当新需求来临，稍加修改，加入了一个新方法后，由于类中的产品构成了不同等级结构中的产品族，它就变成抽象工厂模式了；而对于抽象工厂模式，当减少一个方法使的提供的产品不再构成产品族之后，它就演变成了工厂方法模式。
+
+  所以，在使用工厂模式时，只需要关心降低耦合度的目的是否达到了。
+
+  > 原文来自：https://www.cnblogs.com/zailushang1996/p/8601808.html
 
 
 
