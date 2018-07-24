@@ -883,9 +883,483 @@
 
   > 原文来自：https://www.cnblogs.com/zailushang1996/p/8601808.html
 
+### 委派模式
+
+  委派模式有点像代理模式又有点像策略模式。例如：公司老板给项目经理下达任务，将任务全权交给项目经理，由项目经理根据一定的策略将任务分配给小组成员，项目经理从头跟到尾。项目经理就像一个受老板授权的中介，老板不需要和小组成员直接联系，甚至可以不知道他的存在。
+
+  我们员工实现同一个干活的接口
+  ```
+  我们员工实现同一个干活的接口
+  ```
+
+  我们员工实现同一个干活的接口
+  ```
+  public class TargetA implements ITarget {
+      @Override
+      public void doSomething(String command) {
+          System.out.println("我是员工A，现在开始干" + command + "");
+      }
+  }
+
+  public class TargetB implements ITarget {
+      @Override
+      public void doSomething(String command) {
+          System.out.println("我是员工B，现在开始干" + command + "");
+      }
+  }
+  ```
+  项目经理持有所有的小组成员，根据一定的策略选择干活的人
+  ```
+  public class Leader implements ITarget {
+
+      private Map<String, ITarget> targets = new HashMap<>();
+
+      /**
+       * 项目经理持有小组成员可供选择，类似策略模式
+       */
+      public Leader() {
+          targets.put("加密", new TargetA());
+          targets.put("登录", new TargetB());
+      }
+
+      public void doSomething(String command) {
+          targets.get(command).doSomething(command);
+      }
+  }
+  ```
+  领导下达命令
+  ```
+  public class Boss {
+
+      public static void main(String[] args) {
+          new Leader().doSomething("登录");
+      }
+  }
+  ```
+  从上面可以看出来委派模式就是静态代理和策略模式的一种特殊组合，代理模式注重的是过程，委派模式注重的是结果。策略模式注重的是可扩展（外部扩展），委派模式注重的是内部的灵活和复用。
+
+> 原文来源：https://blog.csdn.net/caoyue_new/article/details/80500431
+
+### 策略模式
+
+  使用场景实例：
+
+  - 假设某个网站销售各种书籍，对初级会员没有提供折扣，对中级会员提供每本10%的促销折扣，对高级会员提供每本20%的促销折扣。
+  - 折扣是根据以下的3个算法中的1个进行的：
+    - 算法1：对初级会员没有提供折扣。
+    - 算法2：对中级会员提供10%的促销折扣。
+    - 算法3：对高级会员提供20%的促销折扣。
+
+    UML图：
+    ![UML图](http://graph.guoyw.com/Java_notes/JavaSE/design_mode/策略模式实例1.png)
+
+    ```
+    // 折扣接口
+    public interface MemberStrategy {
+        /**
+         * 计算图书的价格
+         * @param booksPrice    图书的原价
+         * @return    计算出打折后的价格
+         */
+        public double calcPrice(double booksPrice);
+    }
+
+    // 初级会员折扣实现类
+    public class PrimaryMemberStrategy implements MemberStrategy {
+
+        @Override
+        public double calcPrice(double booksPrice) {
+
+            System.out.println("对于初级会员的没有折扣");
+            return booksPrice;
+        }
+
+    }
+
+    // 中级会员折扣实现类
+    public class IntermediateMemberStrategy implements MemberStrategy {
+
+        @Override
+        public double calcPrice(double booksPrice) {
+
+            System.out.println("对于中级会员的折扣为10%");
+            return booksPrice * 0.9;
+        }
+
+    }
+
+    // 高级会员折扣实现类
+    public class AdvancedMemberStrategy implements MemberStrategy {
+
+        @Override
+        public double calcPrice(double booksPrice) {
+
+            System.out.println("对于高级会员的折扣为20%");
+            return booksPrice * 0.8;
+        }
+    }
+
+    //  价格类
+    public class Price {
+        // 持有一个具体的策略对象
+        private MemberStrategy strategy;
+        /**
+         * 构造函数，传入一个具体的策略对象
+         * @param strategy    具体的策略对象
+         */
+        public Price(MemberStrategy strategy){
+            this.strategy = strategy;
+        }
+
+        /**
+         * 计算图书的价格
+         * @param booksPrice    图书的原价
+         * @return    计算出打折后的价格
+         */
+        public double quote(double booksPrice){
+            return this.strategy.calcPrice(booksPrice);
+        }
+    }
+
+    //客户端
+    public class Client {
+
+        public static void main(String[] args) {
+            // 选择并创建需要使用的策略对象
+            MemberStrategy strategy = new AdvancedMemberStrategy();
+            // 创建环境
+            Price price = new Price(strategy);
+            // 计算价格
+            double quote = price.quote(300);
+            System.out.println("图书的最终价格为：" + quote);
+        }
+
+    }
 
 
+    ```
+    　策略模式的重心不是如何实现算法，而是如何组织、调用这些算法，从而让程序结构更灵活，具有更好的维护性和扩展性。策略算法是相同行为的不同实现。在运行期间，策略模式在每一个时刻只能使用一个具体的策略实现对象。把所有的具体策略实现类的共同公有方法封装到抽象类里面，将代码向继承等级结构的上方集中。
+
+    ![策略模式](http://graph.guoyw.com/Java_notes/JavaSE/design_mode/策略模式.png)
+
+    **策略模式优点：**
+    1. 通过策略类的等级结构来管理算法族。
+    2. 避免使用将采用哪个算法的选择与算法本身的实现混合在一起的多重条件(if-else if-else)语句。
+
+    **策略模式缺点：**
+    1. 客户端必须知道所有的策略类，并自行决定使用哪一个策略类。
+    2. 由于策略模式把每个算法的具体实现都单独封装成类，针对不同的情况生成的对象就会变得很多。
+
+    >原文出自：https://www.cnblogs.com/WJQ2017/p/7629109.html
+
+### 原型模式
+  传送门：[原型模式](https://www.cnblogs.com/lfxiao/p/6812835.html)
+
+### 模板方法模式
+
+  模板方法模式UML图:
+  ![模式UML图](http://graph.guoyw.com/Java_notes/JavaSE/design_mode/模板模式实例1.png)
+
+  写的是一个汽车启动的过程，每一种汽车启动的过程都基本是一样的流程，无非是这一过程中存在一些细小差别。
+  ```
+  /**
+   * 汽车模型
+   * 模型模式
+   * @author liaowp
+   *
+   */
+  public abstract class CarModel {
+       /**
+        * 汽车启动
+        */
+       protected abstract void start();
+
+       /**
+        * 停车
+        */
+       protected abstract void stop();
+
+       /**
+        * 用户并不需要关注你的车怎么启动或者停下来的，可以开可以停就可以啦
+        */
+       final public void excet(){
+           this.start();
+           this.stop();
+       }
+  }
 
 
+  /**
+   * 大众车
+   * @author liaowp
+   *
+   */
+  public class Wcar extends CarModel{
+
+      @Override
+      protected void start() {
+          System.out.println("大众车启动 。。。。。。。。突突突");
+      }
+
+      @Override
+      protected void stop() {
+          System.out.println("大众车停车。。。。。。。。。");
+      }
+  }
+
+  /**
+   * 奥迪
+   * @author liaowp
+   *
+   */
+  public class Ocar extends CarModel{
+
+      @Override
+      protected void start() {
+          System.out.println("奥迪  无匙启动               突突突");
+      }
+
+      @Override
+      protected void stop() {
+          System.out.println("奥迪  停车              ");
+      }
+
+  }
 
 
+  /**
+   * 客户端
+   * @author liaowp
+   *
+   */
+  public class Client {
+      public static void main(String[] args) {
+          CarModel wcar=new Wcar();//家里的第一辆车，作为用户的我们并不需要关注车怎么启动的.子类变量变为父类。多态
+          wcar.excet();
+
+          //突然家里需要第二辆车了   奥迪     我们也不需要关注他怎么生产启动的
+          CarModel ocar=new Ocar();
+          ocar.excet();
+      }
+  }
+
+  ```
+
+  **模板方法模式适用场景**
+
+  - 一次性实现一个算法的不变的部分，并将可变的行为留给子类来实现。
+  - 各子类中公共的行为应被提取出来并集中到一个公共父类中以避免代码重复。这是Opdyke和Johnson所描述过的“重分解以一般化”的一个很好的例子。首先识别现有代码中的不同之处，并且将不同之处分离为新的操作。最后，用一个调用这些新的操作的模板方法来替换这些不同的代码。
+  - 控制子类扩展。模板方法只在特定点调用“hook”操作，这样就只允许在这些点进行扩展。
+
+  > 作者：鹏鹏
+    出处：http://www.cnblogs.com/liaoweipeng/
+
+### 观察者模式简单例子
+  观测者模式定义了对象之间的一对多依赖，当一个对象状态发生改变时，其依赖者便会收到通知并做相应的更新。其原则是：为交互对象之间松耦合。以松耦合方式在一系列对象之间沟通状态，我们可以独立复用主题（Subject）/可观测者（Observable）和观测者（Observer），即只要遵守接口规则改变其中一方并不会影响到另一方。这也是其主要的设计原则。下面是一个简单的气象站发送天气信息给布告板，然后布告板把天气信息显示在板上的例子。
+  首先先建立三个接口，主题（Subject）、观测者（Observer）和显示内容（DisplayElement），分别代表气象站、布告板信息接收和布告板信息显示。
+
+  ```
+  /**
+   *  主题
+   */
+  public interface Subject {
+      // 观察者注册
+      public void registerObserver(Observer o);
+      // 删除观察者
+      public void removeObserver(Observer o);
+      // 当主题有内容更新时调用，用于通知观察者
+      public void notifyObserver();
+  }
+  /**
+   *  观察者
+   */
+  public interface Observer {
+      // 当气象站观测的天气发生变化时，主题会把参数值传给观察者
+      public void update(float temp);
+  }
+
+  /**
+   *  用于布告板显示
+   */
+  public interface DisplayElement {
+      // 在显示布告板上显示的操作
+      public void display();
+  }
+
+  ```
+  接下来是实现气象站（）和布告板（）了。
+  ```
+  /**
+   * 气象站实现主题，发布气象信息（气温）
+   */
+  public class WeatherStation implements Subject{
+      private ArrayList observers;
+      private float temp;
+
+      public WeatherStation() {
+          // 加个ArrayList存放所有注册的Observer对象;
+          observers = new ArrayList<>();
+      }
+
+      @Override
+      public void registerObserver(Observer o) {
+          // 当新的观察者注册时添加进来
+          observers.add(o);
+      }
+
+      @Override
+      public void removeObserver(Observer o) {
+          // 当观察者取消注册时去除该观察者
+          int i = observers.indexOf(o);
+          if (i>=0) {
+              observers.remove(i);
+          }
+      }
+
+      @Override
+      public void notifyObserver() {
+          // 更新状态，调用Observer的update告诉观察者有新的信息
+          for (int i = 0; i < observers.size(); i++) {
+              Observer observer = (Observer) observers.get(i);
+              observer.update(temp);
+          }
+      }
+
+      /*
+       *  此方法用于气象站收到的数据,并且调用更新使数据实时通知给观察者
+       */
+      public void setMeasurements(float temp){
+          this.temp = temp;
+          System.out.println("气象站测量的温度为：" + temp + "℃");
+          notifyObserver();
+      }
+  }
+
+  /**
+   * 布告板上的状态显示
+   */
+  public class ConditionDisplay implements Observer,DisplayElement{
+      private float temp;
+      private Subject weatherStation;
+
+      public ConditionDisplay(Subject weatherStation) {
+          // 构造时需要间主题/被观察者对象作为注册之用
+          this.weatherStation = weatherStation;
+          weatherStation.registerObserver(this);
+      }
+
+      @Override
+      public void display() {
+          // 将数据显示在布告板上
+          System.out.println("布告板显示当前温度为：" + temp + "℃");
+      }
+
+      @Override
+      public void update(float temp) {
+          // 接受来自主题/被观察者（气象站）的数据
+          this.temp = temp;
+          display();
+      }
+  }
+
+  ```
+  测试结果
+  ```
+  /**
+   * 天气观测站
+   */
+  public class WeatherObserver {
+
+      public static void main(String[] args) {
+          // 首先创建一个主题/被观察者
+          WeatherStation weatherStation = new WeatherStation();
+          // 创建观察者并将被观察者对象传入
+          ConditionDisplay conditionDisplay = new ConditionDisplay(weatherStation);
+
+          // 设置气象站模拟收到的气温数据
+          weatherStation.setMeasurements(25);
+          weatherStation.setMeasurements(24);
+          weatherStation.setMeasurements(23);
+      }
+  }
+
+  ```
+
+#### JAVA内置观察者模式
+  可以使用java内置的观察者模式，这样就无需自己写Subject和Observer类了，在java.util包下继承的Observable和实现Observer类即可。其修改后的代码如下：
+  ```
+  /**
+   * 继承java内置的被观察者，因此不再需要注册和删除了
+   */
+  public class WeatherStationN extends Observable{
+      private float temperature;
+      public WeatherStationN() {
+          // 由于继承了Observable，它已经创建了一个Vector来存放Observer对象的容器，所以此处不用再建立ArrayList
+      }
+
+      /*
+       *  此方法用于气象站收到的数据,并且调用更新使数据实时通知给观察者
+       */
+      public void setMeasurements(float temp){
+          this.temperature = temp;
+          System.out.println("气象站测量的温度为：" + temp + "℃");
+          // 更新强调用表示有状态更新
+          setChanged();
+          notifyObservers(temperature);
+      }
+  }
+
+  /**
+   * 实现java内置Observer接口
+   */
+  public class ConditionDisplayN implements java.util.Observer,DisplayElement{
+      private Observable observable;
+      private float temp;
+
+      public ConditionDisplayN(Observable observable) {
+          // 构造器需要Observable作为参数
+          this.observable = observable;
+          observable.addObserver(this);
+      }
+
+      @Override
+      public void display() {
+          // 将数据显示在布告板上
+          System.out.println("布告板显示当前温度为：" + temp + "℃");
+      }
+
+      @Override
+      public void update(Observable o, Object arg) {
+          // 当被观察者有更新使触发
+          if (o instanceof WeatherStationN) {
+              this.temp = (float) arg;
+              display();
+          }
+      }
+  }
+  ```
+  测试运行结果
+
+  ```
+  /**
+   * 天气观测站
+   */
+  public class WeatherObserver {
+
+      public static void main(String[] args) {
+          // 首先创建一个主题/被观察者
+          WeatherStationN weatherStationN = new WeatherStationN();
+          // 创建观察者并将被观察者对象传入
+          ConditionDisplayN conditionDisplayN = new ConditionDisplayN(weatherStationN);
+
+          // 设置气象站模拟收到的气温数据
+          weatherStationN.setMeasurements(30);
+          weatherStationN.setMeasurements(25);
+          weatherStationN.setMeasurements(20);
+      }
+  }
+  ```
+
+  Observer是一个接口，而Observable是一个类，在使用时必须继承它，因此在继承Observable时就无法再继承其他超类了，因为Java毕竟不支持多重继承。且在Observable更新前，即notifyObservers()或notifyObservers(Object arg)前要先调用setChange()标记更新状态
+
+  >原文出自：https://blog.csdn.net/qq_15128547/article/details/53205892
